@@ -39,17 +39,24 @@ namespace RetailApplication.Infrastructure.Repositories
         {
             var whereClause = filters.HasNoFilter ? "" :
                     $@"where 1=1 
-                        {(string.IsNullOrEmpty(filters.ProductName) ? "" : " and Name like '%@ProductName%'")}
-                        {(!filters.MinPrice.HasValue ? "" : " and Price < @MinPrice")}
-                        {(!filters.MaxPrice.HasValue ? "" : " and Price > @MaxPrice")}
-                        {(!filters.PostedDateFrom.HasValue ? "" : " and CreatedOn > @PostedDateFrom")}
-                        {(!filters.PostedDateTo.HasValue ? "" : " and CreatedOn < @PostedDateTo")}
+                        {(string.IsNullOrEmpty(filters.ProductName) ? "" : " and Name like @productName")}
+                        {(!filters.MinPrice.HasValue ? "" : " and Price < @minPrice")}
+                        {(!filters.MaxPrice.HasValue ? "" : " and Price > @maxPrice")}
+                        {(!filters.PostedDateFrom.HasValue ? "" : " and CreatedOn > @postedDateFrom")}
+                        {(!filters.PostedDateTo.HasValue ? "" : " and CreatedOn < @postedDateTo")}
                         ";
             var sql = $@"select * from product
                          {whereClause}
                          order by 1 desc;";
-
-            return await DBHelper.ListAsync<Product>(sql, filters);
+            var param = new
+            {
+                productName = '%' + filters.ProductName + '%',
+                minPrice = filters.MinPrice,
+                maxPrice = filters.MaxPrice,
+                postedDateFrom = filters.PostedDateFrom,
+                postedDateTo = filters.PostedDateTo
+            };
+            return await DBHelper.ListAsync<Product>(sql, param);
         }
 
         public async Task<Product> GetProductById(int id)
@@ -70,14 +77,24 @@ namespace RetailApplication.Infrastructure.Repositories
             var approvalRequest = await GetProductApprovalById(id);
             if (approvalRequest == null) return false;
 
+            bool modifyResult = false;
             var product = _mapper.Map<ProductApproval, Product>(approvalRequest);
-            return approvalRequest.RequestType switch
+            using (TransactionScope trxScope = new TransactionScope())
             {
-                ApprovalRequestType.Create => (await Create(product)) > 0,
-                ApprovalRequestType.Update => await Update(product),
-                ApprovalRequestType.Delete => await Delete(product),
-                _ => throw new NotImplementedException()
-            };
+                modifyResult = approvalRequest.RequestType switch
+                {
+                    ApprovalRequestType.Create => (await Create(product)) > 0,
+                    ApprovalRequestType.Update => await Update(product),
+                    ApprovalRequestType.Delete => await Delete(product),
+                    _ => throw new NotImplementedException()
+                };
+                if(modifyResult)
+                    await DBHelper.DeleteAsync(approvalRequest);
+
+                trxScope.Complete();
+            }
+
+            return modifyResult;
         }
 
         public async Task<bool> Decline(int id)

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Dapper;
 
 namespace RetailApplication.Core.Entities
 {
@@ -15,7 +9,11 @@ namespace RetailApplication.Core.Entities
         public int ProductId { get; set; }
         public required string Name { get; set; }
         public decimal Price { get; set; }
+        [IgnoreInsert]
+        [IgnoreUpdate]
         public DateTime CreatedOn { get; set; }
+        [IgnoreInsert]
+        [IgnoreUpdate]
         public DateTime? ModifiedOn { get; set; }
     }
 }

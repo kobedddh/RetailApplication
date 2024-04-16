@@ -17,11 +17,14 @@ namespace RetailApplication.Api.Controllers
         {
             _productService = productService;
         }
-        //[HttpPost]
-        //public Task<IActionResult> Search(ProductFilter filter)
-        //{
 
-        //}
+        [HttpPost]
+        [Route("search")]
+        public async Task<IActionResult> Search(ProductFilters filter)
+        {
+            var result = await _productService.Search(filter);
+            return Ok(result);
+        }
 
         [HttpPost]
         public async Task<IActionResult> Create(ProductModificationRequest product)
@@ -33,7 +36,7 @@ namespace RetailApplication.Api.Controllers
             }
             catch(ApprovalRequiredException aex)
             {
-                return Ok($"Product creation request has been sent but requires approval. reason: {aex}");
+                return Ok($"Product creation request has been sent but requires approval. reason: {aex.Message}");
             }
             catch (Exception ex)
             {
@@ -51,7 +54,7 @@ namespace RetailApplication.Api.Controllers
             }
             catch (ApprovalRequiredException aex)
             {
-                return Ok($"Product update request has been sent but requires approval. reason: {aex}");
+                return Ok($"Product update request has been sent but requires approval. reason: {aex.Message}");
             }
             catch (Exception ex)
             {

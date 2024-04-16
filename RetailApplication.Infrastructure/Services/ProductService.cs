@@ -65,10 +65,7 @@ namespace RetailApplication.Infrastructure.Services
             return await _productRepository.PushToApprovalQueue(approvalRequest);
         }
 
-        public Task<IEnumerable<Product>> Search(ProductFilters filters)
-        {
-            throw new NotImplementedException();
-        }
+        public async Task<IEnumerable<Product>> Search(ProductFilters filters) => await _productRepository.Search(filters);
 
 
     }
